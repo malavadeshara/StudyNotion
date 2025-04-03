@@ -2,6 +2,8 @@ const User = require('./models/user');
 const OTP = require("../Models/OTP");
 const otpGenerator = require('otp-generator')
 const bcrypt = require('bcrypt');
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 
 // Send OTP
@@ -104,7 +106,7 @@ exports.signUp = async (req, res) => {
         }
 
         // find most recent OTP stored for the user
-        const recentOtp = await OTP.find({ email }).sort({ created: -1 }.limit(1));
+        const recentOtp = await OTP.find({ email }).sort({ created: -1 }).limit(1);
         console.log(recentOtp);
 
         // validate OTP
@@ -162,8 +164,81 @@ exports.signUp = async (req, res) => {
 
 // Login
 exports.login = async (req, res) => {
-    
+    try {
+        // get data from request body
+        const { email, password } = req.body;
+
+        // validation data
+        if (!email || !password) {
+            return res.status(403).json({
+                success: false,
+                message: 'Please enter both email and password',
+            });
+        }
+
+        // user check exist or not
+        const user = await User.findOne({ email }).populate("additionalDetails");
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: "User is not registered, please signUp first!",
+            });
+        }
+
+        // generate JWT, after password matching
+        if (await bcrypt.compare(password, User.password)) {
+
+            const payload = {
+                email: user.email,
+                id: user._id,
+                accountType: user.accountType,
+            };
+            const token = jwt.sign(payload, process.env.JWT_SECRET, {
+                expiresIn: "2h",
+            });
+            user.token = token;
+            user.password = undefined;
+
+            // create cookie and send response
+            const options = {
+                rxpires: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+                httpOnly: true,
+            }
+
+            res.cookie("token", token, options).status(200).json({
+                success: true,
+                token,
+                user,
+                message: "User Logged in successfully",
+            });
+
+        } else {
+
+            return res.status(401).json({
+                success: false,
+                message: "Password is incorrect",
+            });
+
+        }
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            success: false,
+            message: "login faliure, please try again",
+        });
+    }
 }
 
 
 // Change Password
+exports.changePassword = async (req, res) => {
+    // get data dron req body
+    // get old pssword, new password, confirm new password
+    // validation
+
+    // update password in DB
+
+    // send mail - password updated
+
+    // return response
+}
