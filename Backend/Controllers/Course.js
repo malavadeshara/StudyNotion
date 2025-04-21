@@ -95,7 +95,13 @@ exports.showAllCourses = async (req, res) => {
             instructor: true,
             ratingAndReviews: true,
             studentsEnrolled: true,
-        });
+        }).populate("instructor").exec();
+
+        return res.status(200).json({
+            success: true,
+            message: "Data of all courses fetched successfully.",
+            data: allCourses
+        })
     } catch (error) {
         console.log(error);
         return res.status(500).json({
