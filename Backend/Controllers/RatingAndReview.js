@@ -114,10 +114,29 @@ exports.getAverageRating = async (req, res) => {
             message: "Average Rating is 0, no ratings given till now",
             averageRating: 0,
         });
-        
+
     } catch(error) {
         return res.status(500).json({
             success: false,
+            message: error.message,
+        });
+    }
+}
+
+// get all ratings and reviews
+exports.getAllRating = async(req, res) => {
+    try {
+        const allReviews = await RatingAndReview.find({}).sort({rating: "desc"}).populate({ path: "user", select: "firstName lastName email"}).populate({ path: "course", selected: "courseName",}).exec();
+
+        return res.status(200).json({
+            success: true,
+            message: "All ratings and reviews fetched successfully.",
+            data: allReviews,
+        })
+    } catch(error) {
+        console.log(error);
+        return res.status(500).json({
+            success: true,
             message: error.message,
         });
     }

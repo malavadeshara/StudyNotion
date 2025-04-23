@@ -232,7 +232,7 @@ exports.login = async (req, res) => {
 
 // Change Password
 exports.changePassword = async (req, res) => {
-    // get data dron req body
+    // get data fron req body
     // get old pssword, new password, confirm new password
     // validation
 
