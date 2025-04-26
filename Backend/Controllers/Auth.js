@@ -1,7 +1,9 @@
-const User = require('./models/user');
+const User = require('../Models/User');
 const OTP = require("../Models/OTP");
 const otpGenerator = require('otp-generator')
 const bcrypt = require('bcrypt');
+const Profile = require("../Models/Profile");
+const mailSender = require("../utils/mailSender");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
@@ -29,7 +31,7 @@ exports.sendOTP = async (req, res) => {
             lowerCaseAlphabets: false,
             specialChars: false,
         });
-        console.log("Generated otp : ", otp);
+        // console.log("Generated otp : ", otp);
 
         // check unique otp or not?
         let result = await OTP.findOne({ otp: otp });
@@ -47,7 +49,24 @@ exports.sendOTP = async (req, res) => {
 
         // create an entry in DB for otp
         const otpBody = await OTP.create(otpPayload);
-        console.log(otpBody);
+        // console.log(otpBody);
+
+        // // send otp to user email
+        // try {
+        //     const emailResponse = await mailSender(
+        //         email,
+        //         `OTP Verification for Signup`,
+        //         otpTemplate(otp)
+        //     );
+        //     console.log("Email sent successfully:", emailResponse.response);
+        // } catch (error) {
+        //     console.error("Error occurred while sending otp verification email:", error);
+        //     return res.status(500).json({
+        //         success: false,
+        //         message: "Error occurred while sending email",
+        //         error: error.message,
+        //     });
+        // }
 
         // return response successful
         res.status(200).json({
@@ -55,8 +74,9 @@ exports.sendOTP = async (req, res) => {
             message: 'OTP sent successfully',
             otp,
         });
+
     } catch (error) {
-        console.log(error);
+        // console.log("Error in sending OTP : ", error);
         return res.status(500).json({
             success: false,
             message: error.message,
@@ -107,7 +127,6 @@ exports.signUp = async (req, res) => {
 
         // find most recent OTP stored for the user
         const recentOtp = await OTP.find({ email }).sort({ created: -1 }).limit(1);
-        console.log(recentOtp);
 
         // validate OTP
         if (recentOtp.length === 0) {
@@ -116,7 +135,7 @@ exports.signUp = async (req, res) => {
                 success: false,
                 message: 'OTP Not Found',
             })
-        } else if (otp !== recentOtp) {
+        } else if (otp !== recentOtp[0].otp) {
             // Invelid otp
             return res.status(400).json({
                 success: false,
@@ -134,11 +153,11 @@ exports.signUp = async (req, res) => {
             about: null,
             contactNumber: null,
         });
+
         const user = await User.create({
             firstName,
             lastName,
             email,
-            contactNumber,
             password: hashedPassword,
             accountType,
             additionalDetails: ProfileDetails._id,
@@ -153,10 +172,10 @@ exports.signUp = async (req, res) => {
         });
 
     } catch (error) {
-        console.log(error);
         res.status(500).json({
             success: false,
             message: 'Error during registration. Please try again',
+            error: error.message,
         })
     }
 }
@@ -186,7 +205,7 @@ exports.login = async (req, res) => {
         }
 
         // generate JWT, after password matching
-        if (await bcrypt.compare(password, User.password)) {
+        if (await bcrypt.compare(password, user.password)) {
 
             const payload = {
                 email: user.email,
@@ -234,11 +253,73 @@ exports.login = async (req, res) => {
 exports.changePassword = async (req, res) => {
     // get data fron req body
     // get old pssword, new password, confirm new password
+    const { email, oldPassword, newPassword, confirmNewPassword } = req.body;
+
     // validation
+    if (!email || !oldPassword || !newPassword || !confirmNewPassword) {
+        return res.status(403).json({
+            success: false,
+            message: 'Please fill all the fields, All fields are required!',
+        });
+    }
+
+    // check if new password and confirm new password are same or not
+    if (newPassword !== confirmNewPassword) {
+        return res.status(400).json({
+            success: false,
+            message: 'New Password and Confirm New Password do not match',
+        });
+    }
+
+    // check if user exist or not
+    const user = await User.findOne({ email });
+    if (!user) {
+        return res.status(401).json({
+            success: false,
+            message: 'User not found',
+        });
+    }
+
+    // check if old password is correct or not
+    const isPasswordMatched = await bcrypt.compare(oldPassword, user.password);
+    if (!isPasswordMatched) {
+        return res.status(401).json({
+            success: false,
+            message: 'Old Password is incorrect',
+        });
+    }
+
+    // hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    console.log("Hashed Password : ", hashedPassword);
+    user.password = hashedPassword;
+    await user.save(); // save the user in DB
+    console.log("User after password update : ", user);
 
     // update password in DB
 
     // send mail - password updated
+    try {
+        const emailResponse = await mailSender(
+            user.email,
+            passwordUpdated(
+                user.email,
+                `Password updated successfully for ${user.firstName} ${user.lastName}`
+            )
+        );
+        console.log("Email sent successfully:", emailResponse.response);
+    } catch (error) {
+        console.error("Error occurred while sending email:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error occurred while sending email",
+            error: error.message,
+        });
+    }
 
     // return response
+    return res.status(200).json({
+        success: true,
+        message: 'Password updated successfully',
+    });
 }

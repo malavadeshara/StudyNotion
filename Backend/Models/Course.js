@@ -31,17 +31,35 @@ const CourseSchema = new mongoose.Schema({
         type: Number,
     },
     thumbnail: {
-        type:String,
+        type: String,
     },
-    categoey: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Category",  
-    },
-    studentsEnrolled: {
-        types: mongoose.Schema.Types.ObjectId,
+    tag: {
+        type: [String],
         required: true,
-        ref: "User",
-    }
+    },
+    category: { // ✅ corrected spelling
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category",
+    },
+    studentsEnrolled: [ // ✅ fixed 'type' key
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            required: true,
+            ref: "User",
+        }
+    ],
+    instructions: {
+        type: [String],
+    },
+    status: {
+        type: String,
+        enum: ["Draft", "Published"],
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now,
+        required: true,
+    },
 });
 
 module.exports = mongoose.model('Course', CourseSchema);
