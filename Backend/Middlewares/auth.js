@@ -6,36 +6,43 @@ const User = require('../Models/User');
 // auth
 exports.auth = async (req, res, next) => {
     try {
-        // extract token
-        const token = req.header('Authorization').replace('Bearer ', '')
-                        || req.body.token
-                        || req.cookies.token;
-        
-        // if token missing, then return response
-        if(!token) {
-            return res.status(401).lson({
+        //extract token
+
+        const token = req.cookies.token
+            || req.body.token
+            || req.header("Authorization").replace("Bearer ", "");
+
+        //if token missing,then return response
+        if (!token) {
+            return res.status(401).json({
                 success: false,
-                message: 'Token is missing, Please authenticate',
+                message: "Token is missing"
             });
         }
 
-        // verify token
+        //verify token
         try {
+            console.log("BEFORE VERIFIYINH");
             const decode = jwt.verify(token, process.env.JWT_SECRET);
             console.log(decode);
+            console.log("HERE WE DECODED");
             req.user = decode;
-        } catch(error) {
-            // verification - issue
+        }
+        catch (err) {
+            //issue
+            console.log(err);
+            console.log(err.message);
             return res.status(401).json({
                 success: false,
-                message: 'Token is invalid',
+                message: "Token is invalid"
             });
         }
         next();
-    } catch (error) {
+
+    } catch (err) {
         return res.status(401).json({
             success: false,
-            message: 'Something went wrong while authenticating',
+            message: "Something went wrong while validating the token",
         });
     }
 }
@@ -44,14 +51,14 @@ exports.auth = async (req, res, next) => {
 // isStudent
 exports.isStudent = async (req, res, next) => {
     try {
-        if(req.user.accountType !== "Student") {
+        if (req.user.accountType !== "Student") {
             return res.status(401).json({
                 success: false,
                 message: "This is a protected route for Students only."
             });
         }
         next();
-    } catch(error) {
+    } catch (error) {
         return res.status(500).json({
             success: false,
             message: "User role can not be verified, pease try again",
@@ -63,14 +70,14 @@ exports.isStudent = async (req, res, next) => {
 // admin
 exports.isAdmin = async (req, res, next) => {
     try {
-        if(req.user.accountType !== "Admin") {
+        if (req.user.accountType !== "Admin") {
             return res.status(401).json({
                 success: false,
                 message: "This is a protected route for Admins only."
             });
         }
         next();
-    } catch(error) {
+    } catch (error) {
         return res.status(500).json({
             success: false,
             message: "User role can not be verified, pease try again",
@@ -82,14 +89,14 @@ exports.isAdmin = async (req, res, next) => {
 // instructor
 exports.isInstructor = async (req, res, next) => {
     try {
-        if(req.user.accountType !== "Instructor") {
+        if (req.user.accountType !== "Instructor") {
             return res.status(401).json({
                 success: false,
                 message: "This is a protected route for instructors only."
             });
         }
         next();
-    } catch(error) {
+    } catch (error) {
         return res.status(500).json({
             success: false,
             message: "User role can not be verified, pease try again",

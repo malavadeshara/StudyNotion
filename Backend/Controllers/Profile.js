@@ -4,12 +4,13 @@ const CourseProgress = require("../Models/CourseProgress");
 const { uploadImageToCloudinary } = require("../utils/imageUploader");
 const { convertSecondsToDuration } = require("../utils/secToDuration");
 const Course = require("../Models/Course");
+const path = require("path");
 
 // Update Profile
 exports.updateProfile = async (req, res) => {
     try {
         // get data
-        const { dateOfBirth = "", about = "", contactNumber, gender } = req.body;
+        const { dateOfBirth = "", about = "", contactNumber = "", gender = ""} = req.body;
 
         // get userId from token
         const id = req.user.id;
@@ -122,15 +123,23 @@ exports.getAllUserDetails = async (req, res) => {
 
 exports.updateDisplayPicture = async (req, res) => {
     try {
-        const displayPicture = req.files.displayPicture
-        const userId = req.user.id
+
+        // get data from request body
+        const displayPicture = req.files.displayPicture;
+        const userId = req.user.id;
+
+        console.log(displayPicture.tempFilePath);
+        const fixedPath = path.resolve(displayPicture.tempFilePath); // ✅ Converts \ to \\ on Windows
+        console.log("fixed path: ", fixedPath);
+
         const image = await uploadImageToCloudinary(
-            displayPicture,
+            fixedPath,
             process.env.FOLDER_NAME,
             1000,
             1000
-        )
-        console.log(image)
+        );
+
+        console.log("updating image in database");
         const updatedProfile = await User.findByIdAndUpdate(
             { _id: userId },
             { image: image.secure_url },
