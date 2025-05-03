@@ -17,7 +17,7 @@ const {
 
 const {
   updateCourseProgress
-}=require("../controllers/courseProgress");
+}=require("../Controllers/courseProgress");
 
 
 // Categories Controllers Import
@@ -25,21 +25,21 @@ const {
   showAllCategories,
   createCategory,
   categoryPageDetails,
-} = require("../controllers/Category")
+} = require("../Controllers/Category");
 
 // Sections Controllers Import
 const {
   createSection,
   updateSection,
   deleteSection,
-} = require("../controllers/Section")
+} = require("../Controllers/Section");
 
 // Sub-Sections Controllers Import
 const {
   createSubSection,
   updateSubSection,
   deleteSubSection,
-} = require("../Controllers/Subsection")
+} = require("../Controllers/Subsection");
 
 // Rating Controllers Import
 const {
@@ -89,9 +89,9 @@ router.post("/updateCourseProgress",auth,isStudent,updateCourseProgress);
 // ********************************************************************************************************
 // Category can Only be Created by Admin
 // TODO: Put IsAdmin Middleware here
-router.post("/createCategory", auth, isAdmin, createCategory)
-router.get("/showAllCategories", showAllCategories)
-router.post("/getCategoryPageDetails", categoryPageDetails)
+router.post("/createCategory", auth, isAdmin, createCategory);
+router.get("/showAllCategories", auth, showAllCategories);
+router.post("/getCategoryPageDetails", categoryPageDetails);
 
 // ********************************************************************************************************
 //                                      Rating and Review

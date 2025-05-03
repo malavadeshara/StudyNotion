@@ -56,7 +56,6 @@ exports.resetPasswordToken = async (req, res) => {
 }
 
 
-
 // reset password
 exports.resetPassword = async(req, res, next) => {
     try {
